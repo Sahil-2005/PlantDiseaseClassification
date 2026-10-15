@@ -82,20 +82,8 @@ def preprocess_image(pil_img, size=IMG_SIZE, backend="keras"):
     img = pil_img.convert("RGB").resize(size)
     x = np.array(img).astype("float32")
     x = np.expand_dims(x, axis=0)
-    if backend == "keras":
-        try:
-            from tensorflow.keras.applications.efficientnet import preprocess_input
-            x = preprocess_input(x)
-        except Exception:
-            x = x / 255.0
-    else:
-        # For TFLite we'll keep as float32; many models expect -1..1 or 0..1; EfficientNet uses specific scaling
-        # We'll default to the same preprocess as Keras when available
-        try:
-            from tensorflow.keras.applications.efficientnet import preprocess_input
-            x = preprocess_input(x)
-        except Exception:
-            x = x / 255.0
+    # The training notebook used rescale=1./255 for MobileNetV2
+    x = x / 255.0
     return x
 
 @st.cache_resource(show_spinner=True)
