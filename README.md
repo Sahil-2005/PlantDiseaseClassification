@@ -1,35 +1,92 @@
+# 🌿 Plant Disease Classification — Deep Learning Web App
 
-# 🌿 Plant Disease Classification — Streamlit App
+An end-to-end Computer Vision and Deep Learning application to detect and classify plant leaf diseases from images using Transfer Learning with **MobileNetV2** and an interactive **Streamlit** dashboard with **Grad-CAM** visual interpretability.
 
-This is a Streamlit web app to serve a plant disease image classifier trained via transfer learning.
-It supports both **Keras (.keras)** and **TensorFlow Lite (.tflite)** models.
+---
 
-## Files
-- `app.py` — Streamlit application
-- `requirements.txt` — Python dependencies
-- *(Optional)* `plant_disease_classifier_final.keras` — your trained Keras model
-- *(Optional)* `plant_disease_classifier_fp16.tflite` — your TFLite model
-- *(Optional)* `labels.txt` — one class name per line in the training order
+## 📌 Features
 
-## Local Run
-```bash
-python -m venv .venv && source .venv/bin/activate  # (Windows: .venv\Scripts\activate)
-pip install -r requirements.txt
-streamlit run app.py
+- **Transfer Learning with MobileNetV2**: Pre-trained on ImageNet and fine-tuned on the PlantVillage dataset.
+- **15 Supported Plant Conditions**: Classifies diseases across Bell Pepper, Potato, and Tomato crops.
+- **Top-5 Confidence Scores**: View model prediction rankings and confidence percentages.
+- **Explainable AI (Grad-CAM)**: Heatmap overlay on leaf images to visualize which regions the CNN focused on during classification.
+- **Streamlit Web Interface**: Fast, responsive, and easy-to-use user interface for instant inference.
+
+---
+
+## 🗂 Project Structure
+
+```text
+Plant-Disease-Classification/
+├── app.py                                # Streamlit dashboard application
+├── plant_disease_no_finetune.h5          # Trained MobileNetV2 Keras model
+├── labels.txt                            # 15 class labels in model order
+├── plant-disease-transfer-learning.ipynb # Model training & evaluation notebook
+├── requirements.txt                      # Project dependencies
+├── sample_images/                        # Test leaf photos & evaluation guide
+│   └── README.md
+├── .gitignore                            # Git ignore rules for Python & venv
+└── README.md                             # Documentation
 ```
 
-## Provide Labels
-- Paste comma-separated labels in the sidebar **or**
-- Upload `labels.txt` (one class per line).
+---
 
-## Deploy on Streamlit Community Cloud
-1. Push these files and your model file to a public GitHub repo.
-2. Go to https://share.streamlit.io
-3. Create a new app → point to `app.py` in your repo.
-4. Set **Python version** to 3.10+ if needed.
-5. (Optional) If using large Keras model, consider using the `.tflite` file to speed up cold starts.
+## 🏷 Supported Disease Classes
 
-## Notes
-- Grad-CAM is only available for the Keras backend.
-- TFLite backend is faster and lighter but does not support Grad-CAM in this demo.
-- Ensure labels order matches the model's training class order.
+The model classifies leaves into 15 specific categories:
+
+| Crop | Disease / Condition |
+| :--- | :--- |
+| **Pepper Bell** | Bacterial Spot, Healthy |
+| **Potato** | Early Blight, Late Blight, Healthy |
+| **Tomato** | Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites (Two-spotted spider mite), Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+```bash
+git clone <your-repository-url>
+cd Plant-Disease-Classification
+```
+
+### 2. Set Up Virtual Environment
+```bash
+# Windows
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# macOS / Linux
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Run the Streamlit Application
+```bash
+streamlit run app.py
+```
+Open [http://localhost:8501](http://localhost:8501) in your browser.
+
+---
+
+## 🧠 Model & Architecture Details
+
+- **Base Backbone**: MobileNetV2 (ImageNet weights)
+- **Input Resolution**: 224 × 224 × 3
+- **Classification Head**:
+  - GlobalAveragePooling2D
+  - Dense (512 units, ReLU activation) + Dropout (0.5)
+  - Dense (256 units, ReLU activation) + Dropout (0.3)
+  - Dense (15 units, Softmax output)
+- **Interpretability**: Grad-CAM (Gradient-weighted Class Activation Mapping) implemented via TensorFlow GradientTape.
+
+---
+
+## 📜 License
+This project is open-source and available under the [MIT License](LICENSE).
