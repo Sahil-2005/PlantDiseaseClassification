@@ -11,3 +11,5 @@ opencv-python-headless
 
 # LLM Advisory via Groq API
 groq>=0.11.0
+python-dotenv>=1.0.0
+
