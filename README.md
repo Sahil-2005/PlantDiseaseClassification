@@ -10,6 +10,8 @@ An end-to-end Computer Vision and Deep Learning application to detect and classi
 - **15 Supported Plant Conditions**: Classifies diseases across Bell Pepper, Potato, and Tomato crops.
 - **Top-5 Confidence Scores**: View model prediction rankings and confidence percentages.
 - **Explainable AI (Grad-CAM)**: Heatmap overlay on leaf images to visualize which regions the CNN focused on during classification.
+- **🤖 AI Agronomist (Groq LLM)**: Instant, comprehensive treatment plans (organic & chemical remedies, sanitation, and prevention) powered by LLaMA 3 via Groq.
+- **💬 Interactive Follow-Up Chat**: Built-in chat interface to ask specific questions directly to the AI Plant Doctor about care, dosage, and soil health.
 - **Streamlit Web Interface**: Fast, responsive, and easy-to-use user interface for instant inference.
 
 ---
@@ -67,7 +69,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the Streamlit Application
+### 4. Set Up Groq API Key (Optional, for AI Advisory)
+Get a free API key at [console.groq.com](https://console.groq.com) and either enter it in the app sidebar or export it:
+```bash
+# Windows PowerShell
+$env:GROQ_API_KEY="your-api-key-here"
+
+# Linux / macOS
+export GROQ_API_KEY="your-api-key-here"
+```
+
+### 5. Run the Streamlit Application
 ```bash
 streamlit run app.py
 ```
