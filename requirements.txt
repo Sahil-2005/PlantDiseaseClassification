@@ -8,3 +8,6 @@ tensorflow>=2.13.0
 
 # For Grad-CAM overlay
 opencv-python-headless
+
+# LLM Advisory via Groq API
+groq>=0.11.0
