@@ -48,6 +48,21 @@ with st.sidebar:
     show_gradcam = st.checkbox("Show Grad-CAM (Keras only)", value=True, help="Requires Keras model, not supported for TFLite.")
     conf_threshold = st.slider("Confidence threshold", 0.0, 1.0, 0.3, 0.01)
 
+    st.divider()
+    st.subheader("🤖 AI Agronomist (Groq)")
+    enable_llm = st.toggle("Enable AI Treatment Advisory", value=True, help="Generate treatment and prevention plans using Groq LLM.")
+    groq_api_key = st.text_input(
+        "Groq API Key",
+        value=os.environ.get("GROQ_API_KEY", ""),
+        type="password",
+        help="Enter your Groq API key. You can get one free at console.groq.com."
+    )
+    llm_model = st.selectbox(
+        "Groq Model",
+        ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+        index=0
+    )
+
 # --- Utilities ---
 @st.cache_resource(show_spinner=False)
 def load_labels_from_text(text: str):
@@ -120,6 +135,46 @@ def get_topk(probs, labels, k=5):
         name = labels[i] if labels and i < len(labels) else f"class_{i}"
         rows.append((int(i), name, float(probs[i])))
     return rows
+
+def format_class_name(raw_name: str) -> str:
+    # Convert 'Tomato___Early_blight' or 'Tomato_Bacterial_spot' to 'Tomato - Early Blight'
+    cleaned = raw_name.replace("___", " - ").replace("__", " - ").replace("_", " ")
+    return cleaned.strip()
+
+def get_groq_advisory(disease_name: str, confidence: float, api_key: str, model_name: str = "llama-3.3-70b-versatile"):
+    try:
+        from groq import Groq
+        client = Groq(api_key=api_key)
+        
+        system_prompt = (
+            "You are an expert AI Agronomist and Plant Pathologist. "
+            "Your job is to provide concise, scientifically accurate, and actionable guidance for farmers and gardeners. "
+            "Format your advice cleanly using Markdown with distinct sections: "
+            "1. Overview & Diagnosis Summary, "
+            "2. Immediate Curative Actions (organic & chemical options with safety precautions), "
+            "3. Preventive & Cultural Practices (watering, spacing, soil health), "
+            "4. Long-Term Crop Rotation & Management. "
+            "If the plant is diagnosed as healthy, congratulate the grower and provide maintenance/growth tips."
+        )
+        
+        user_prompt = (
+            f"The image classifier diagnosed the plant leaf as: **{format_class_name(disease_name)}** "
+            f"with a confidence of {confidence*100:.1f}%.\n\n"
+            "Please provide a comprehensive treatment, prevention, and advisory guide for this condition."
+        )
+
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=1024,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error communicating with Groq API: {e}"
 
 # --- Model loader ---
 def ensure_model():
@@ -229,6 +284,65 @@ if uploaded is not None:
             st.image([img_display, hm, overlay], caption=["Image", "Heatmap", "Overlay"], use_column_width=True)
         except Exception as e:
             st.info(f"Grad-CAM not available: {e}")
+
+    # --- AI Agronomist Advisory & Chat (Groq LLM) ---
+    if enable_llm:
+        st.markdown("---")
+        st.subheader("🤖 AI Agronomist Advisory")
+
+        if not groq_api_key.strip():
+            st.info("💡 Enter your free **Groq API Key** in the sidebar to generate custom treatment, organic remedies, and prevention plans for this diagnosis.")
+        else:
+            # Generate Advisory
+            if "last_diagnosed" not in st.session_state or st.session_state.last_diagnosed != best_name:
+                st.session_state.last_diagnosed = best_name
+                st.session_state.advisory_text = None
+                st.session_state.chat_history = []
+
+            if st.session_state.advisory_text is None:
+                with st.spinner("AI Agronomist is analyzing disease and preparing treatment plan..."):
+                    st.session_state.advisory_text = get_groq_advisory(best_name, best_conf, groq_api_key.strip(), llm_model)
+
+            st.markdown(st.session_state.advisory_text)
+
+            # Interactive Q&A about this diagnosis
+            st.markdown("#### 💬 Ask the AI Plant Doctor")
+            st.caption("Have questions about organic pesticides, dosage, or care? Ask below:")
+
+            for msg in st.session_state.chat_history:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+
+            user_question = st.chat_input("Ask a question about this plant disease...")
+            if user_question:
+                st.session_state.chat_history.append({"role": "user", "content": user_question})
+                with st.chat_message("user"):
+                    st.markdown(user_question)
+
+                try:
+                    from groq import Groq
+                    client = Groq(api_key=groq_api_key.strip())
+                    system_qa = (
+                        f"You are an AI Agronomist assisting a grower whose plant leaf was classified as {format_class_name(best_name)}. "
+                        "Answer their questions concisely, practically, and empathetically with safe recommendations."
+                    )
+                    messages = [{"role": "system", "content": system_qa}]
+                    for m in st.session_state.chat_history:
+                        messages.append({"role": m["role"], "content": m["content"]})
+
+                    with st.chat_message("assistant"):
+                        with st.spinner("Thinking..."):
+                            resp = client.chat.completions.create(
+                                model=llm_model,
+                                messages=messages,
+                                temperature=0.4,
+                                max_tokens=600
+                            )
+                            answer = resp.choices[0].message.content
+                            st.markdown(answer)
+                    st.session_state.chat_history.append({"role": "assistant", "content": answer})
+                except Exception as e:
+                    st.error(f"Error answering question: {e}")
 else:
     st.info("Upload an image to get started.")
 
