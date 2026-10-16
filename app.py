@@ -57,9 +57,23 @@ with st.sidebar:
         type="password",
         help="Enter your Groq API key. You can get one free at console.groq.com."
     )
+
+    # Dynamic or fallback model list
+    available_models = ["llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192", "gemma2-9b-it", "mixtral-8x7b-32768"]
+    if groq_api_key.strip():
+        try:
+            from groq import Groq
+            _client = Groq(api_key=groq_api_key.strip())
+            _fetched = [m.id for m in _client.models.list().data if "whisper" not in m.id and "guard" not in m.id]
+            if _fetched:
+                # Prefer llama-3.1-8b-instant if available
+                available_models = sorted(_fetched, key=lambda x: (not x.startswith("llama-3.1"), x))
+        except Exception:
+            pass
+
     llm_model = st.selectbox(
         "Groq Model",
-        ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+        available_models,
         index=0
     )
 
@@ -141,7 +155,7 @@ def format_class_name(raw_name: str) -> str:
     cleaned = raw_name.replace("___", " - ").replace("__", " - ").replace("_", " ")
     return cleaned.strip()
 
-def get_groq_advisory(disease_name: str, confidence: float, api_key: str, model_name: str = "llama-3.3-70b-versatile"):
+def get_groq_advisory(disease_name: str, confidence: float, api_key: str, model_name: str = "llama-3.1-8b-instant"):
     try:
         from groq import Groq
         client = Groq(api_key=api_key)
@@ -207,7 +221,7 @@ ensure_model()
 uploaded = st.file_uploader("Upload a leaf image", type=["jpg", "jpeg", "png", "bmp"])
 if uploaded is not None:
     image = Image.open(uploaded)
-    st.image(image, caption="Uploaded image", use_column_width=True)
+    st.image(image, caption="Uploaded image", use_container_width=True)
 
     labels = _resolve_labels()
     if not labels:
@@ -281,7 +295,7 @@ if uploaded is not None:
             overlay = cv2.addWeighted(hm, 0.4, img_display, 0.6, 0)
 
             st.subheader("Grad-CAM")
-            st.image([img_display, hm, overlay], caption=["Image", "Heatmap", "Overlay"], use_column_width=True)
+            st.image([img_display, hm, overlay], caption=["Image", "Heatmap", "Overlay"], use_container_width=True)
         except Exception as e:
             st.info(f"Grad-CAM not available: {e}")
 
